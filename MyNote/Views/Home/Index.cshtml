@@ -1,31 +1,137 @@
 ﻿@{
-    ViewBag.Title = "Home Page";
+    ViewBag.Title = "My Notes - SAAS Ecom Sample";
 }
 
-<div class="jumbotron">
-    <h1>ASP.NET</h1>
-    <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.</p>
-    <p><a href="https://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
-</div>
+<!-- Header -->
+<header>
+    <div class="container">
+        <div class="intro-text">
+            <div class="intro-lead-in">Welcome To My Notes!</div>
+            <div class="intro-heading">SAAS Ecom Demo</div>
+            <a href="#pricing" class="page-scroll btn btn-xl">Start Free Trial</a>
+        </div>
+    </div>
+</header>
 
-<div class="row">
-    <div class="col-md-4">
-        <h2>Getting started</h2>
-        <p>
-            ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that
-            enables a clean separation of concerns and gives you full control over markup
-            for enjoyable, agile development.
-        </p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301865">Learn more &raquo;</a></p>
+<!-- Features Section -->
+<section id="features">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <h2 class="section-heading">Features</h2>
+                <h3 class="section-subheading text-muted">Save all your notes! Don't forget anything</h3>
+            </div>
+        </div>
+        <div class="row text-center">
+            <div class="col-md-4">
+                <span class="fa-stack fa-4x">
+                    <i class="fa fa-circle fa-stack-2x text-primary"></i>
+                    <i class="fa fa-laptop fa-stack-1x fa-inverse"></i>
+                </span>
+                <h4 class="service-heading">Simple to use</h4>
+                <p class="text-muted">This application is very simple to use, just sign up for the trial and check it out.</p>
+            </div>
+            <div class="col-md-4">
+                <span class="fa-stack fa-4x">
+                    <i class="fa fa-circle fa-stack-2x text-primary"></i>
+                    <i class="fa fa-lock fa-stack-1x fa-inverse"></i>
+                </span>
+                <h4 class="service-heading">Secure</h4>
+                <p class="text-muted">This application is protected using SSL encryption. All your data is safe in Microsoft Azure.</p>
+            </div>
+            <div class="col-md-4">
+                <span class="fa-stack fa-4x">
+                    <i class="fa fa-circle fa-stack-2x text-primary"></i>
+                    <i class="fa fa-github-alt fa-stack-1x fa-inverse"></i>
+                </span>
+                <h4 class="service-heading">Open Source</h4>
+                <p class="text-muted">This demo is available in GitHub, feel free to download the source code to understand how it is built.</p>
+            </div>
+        </div>
     </div>
-    <div class="col-md-4">
-        <h2>Get more libraries</h2>
-        <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301866">Learn more &raquo;</a></p>
+</section>
+
+<!-- Pricing Section -->
+<section id="pricing" class="bg-light-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <h2 class="section-heading">Pricing</h2>
+                <h3 class="section-subheading text-muted">30-days FREE trial. Credit Card Not Required.</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="promos">
+                <div class="promo first">
+                    <h4>Basic</h4>
+                    <ul class="features">
+                        <li class="brief">Basic membership</li>
+                        <li class="price">$10</li>
+                        <li>Some great feature</li>
+                        <li>Another super feature</li>
+                        <li>And more...</li>
+                        <li class="buy"><a href="@Url.Action("Register", "Account", new { plan = "basic_monthly" })">Sign up</a></li>
+                    </ul>
+                </div>
+                <div class="promo second">
+                    <h4>Professional</h4>
+                    <ul class="features">
+                        <li class="brief">Professional membership</li>
+                        <li class="price">$20</li>
+                        <li>Some great feature</li>
+                        <li>Another super feature</li>
+                        <li>And more...</li>
+                        <li class="buy"><a href="@Url.Action("Register", "Account", new { plan = "professional_monthly" })">Sign up</a></li>
+                    </ul>
+                </div>
+                <div class="promo third scale">
+                    <h4>Business</h4>
+                    <ul class="features">
+                        <li class="brief">This is really a good deal!</li>
+                        <li class="price">$30</li>
+                        <li>Some great feature</li>
+                        <li>Another super feature</li>
+                        <li>And more...</li>
+                        <li class="buy"><a href="@Url.Action("Register", "Account", new { plan = "business_monthly" })">Free Trial</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="col-md-4">
-        <h2>Web Hosting</h2>
-        <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301867">Learn more &raquo;</a></p>
+</section>
+
+<!-- FAQs Section -->
+<section id="faqs">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <h2 class="section-heading">Frequently Asked Questions</h2>
+                <h3 class="section-subheading text-muted">We have collected here some of the questions that we receive more often.</h3>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-offset-1 col-md-offset-1 col-sm-10 col-md-10">
+                <div class="col-sm-6">
+                    <div class="faq">
+                        <h4>Q. Can I change plans at any time?</h4>
+                        <p>Yes. After you log-in to your dashboard you can upgrade / downgrade plans at any time. Your bill will be pro-rated in that case.</p>
+                    </div>
+                    <div class="">
+                        <h4>Q. What Credit Card number can I use for this demo?</h4>
+                        <p>You can use this <strong>Card Number: 4242 4242 4242 4242</strong>, any future date as expiry date and any 3 digits for CVC.</p>
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div class="faq">
+                        <h4>Q. What types of payment do you accept?</h4>
+                        <p>Currently we accept Visa, Mastercard, Discover and American Express. We do not accept PayPal. At this time we only accept payments online so we will not be able to accept a P.O., invoice you, or take an order over the phone.</p>
+                    </div>
+                    <div class="">
+                        <h4>Q. I still have a question. How do I contact you?</h4>
+                        <p>Send a tweet to @@pedropaf</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
+</section>

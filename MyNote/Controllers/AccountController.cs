@@ -1,14 +1,20 @@
 ﻿using System;
-using System.Globalization;
+using System.Configuration;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.Owin;
 using Microsoft.Owin.Security;
+using MyNote.Extensions;
 using MyNote.Models;
+using MyNote.Views.SaasEcom.ViewModels;
+using SaasEcom.Core.DataServices.Storage;
+using SaasEcom.Core.Infrastructure.Facades;
+using SaasEcom.Core.Infrastructure.Helpers;
+using SaasEcom.Core.Infrastructure.PaymentProcessor.Stripe;
+using SaasEcom.Core.Models;
 
 namespace MyNote.Controllers
 {
@@ -22,7 +28,7 @@ namespace MyNote.Controllers
         {
         }
 
-        public AccountController(ApplicationUserManager userManager, ApplicationSignInManager signInManager )
+        public AccountController(ApplicationUserManager userManager, ApplicationSignInManager signInManager)
         {
             UserManager = userManager;
             SignInManager = signInManager;
@@ -34,9 +40,9 @@ namespace MyNote.Controllers
             {
                 return _signInManager ?? HttpContext.GetOwinContext().Get<ApplicationSignInManager>();
             }
-            private set 
-            { 
-                _signInManager = value; 
+            private set
+            {
+                _signInManager = value;
             }
         }
 
@@ -49,6 +55,24 @@ namespace MyNote.Controllers
             private set
             {
                 _userManager = value;
+            }
+        }
+
+        private SubscriptionsFacade _subscriptionsFacade;
+        private SubscriptionsFacade SubscriptionsFacade
+        {
+            get
+            {
+                return _subscriptionsFacade ?? (_subscriptionsFacade = new SubscriptionsFacade(
+                           new SubscriptionDataService<ApplicationDbContext, ApplicationUser>
+                               (HttpContext.GetOwinContext().Get<ApplicationDbContext>()),
+                           new SubscriptionProvider(ConfigurationManager.AppSettings["StripeApiSecretKey"]),
+                           new CardProvider(ConfigurationManager.AppSettings["StripeApiSecretKey"],
+                               new CardDataService<ApplicationDbContext, ApplicationUser>(Request.GetOwinContext().Get<ApplicationDbContext>())),
+                           new CardDataService<ApplicationDbContext, ApplicationUser>(Request.GetOwinContext().Get<ApplicationDbContext>()),
+                           new CustomerProvider(ConfigurationManager.AppSettings["StripeApiSecretKey"]),
+                           new SubscriptionPlanDataService<ApplicationDbContext, ApplicationUser>(Request.GetOwinContext().Get<ApplicationDbContext>()),
+                           new ChargeProvider(ConfigurationManager.AppSettings["StripeApiSecretKey"])));
             }
         }
 
@@ -120,7 +144,7 @@ namespace MyNote.Controllers
             // If a user enters incorrect codes for a specified amount of time then the user account 
             // will be locked out for a specified amount of time. 
             // You can configure the account lockout settings in IdentityConfig
-            var result = await SignInManager.TwoFactorSignInAsync(model.Provider, model.Code, isPersistent:  model.RememberMe, rememberBrowser: model.RememberBrowser);
+            var result = await SignInManager.TwoFactorSignInAsync(model.Provider, model.Code, isPersistent: model.RememberMe, rememberBrowser: model.RememberBrowser);
             switch (result)
             {
                 case SignInStatus.Success:
@@ -134,15 +158,16 @@ namespace MyNote.Controllers
             }
         }
 
-        //
         // GET: /Account/Register
         [AllowAnonymous]
-        public ActionResult Register()
+        public ActionResult Register(string plan)
         {
-            return View();
+            return View(new RegisterViewModel
+            {
+                SubscriptionPlan = plan
+            });
         }
 
-        //
         // POST: /Account/Register
         [HttpPost]
         [AllowAnonymous]
@@ -151,19 +176,38 @@ namespace MyNote.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                var userIP = GeoLocation.GetUserIP(Request).Split(':').First();
+                var user = new ApplicationUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    RegistrationDate = DateTime.UtcNow,
+                    LastLoginTime = DateTime.UtcNow,
+                    IPAddress = userIP,
+                    IPAddressCountry = GeoLocationHelper.GetCountryFromIP(userIP),
+                    BillingAddress = new BillingAddress()
+                };
                 var result = await UserManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
-                    await SignInManager.SignInAsync(user, isPersistent:false, rememberBrowser:false);
-                    
-                    // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=320771
-                    // Send an email with this link
-                    // string code = await UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
-                    // var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
-                    // await UserManager.SendEmailAsync(user.Id, "Confirm your account", "Please confirm your account by clicking <a href=\"" + callbackUrl + "\">here</a>");
+                    // Create Stripe user
+                    var taxPercent = user.IPAddressCountry != null && EuropeanVat.Countries.ContainsKey(user.IPAddressCountry) ?
+                        EuropeanVat.Countries[user.IPAddressCountry] : 0;
 
-                    return RedirectToAction("Index", "Home");
+                    // if no plan set, default to professional
+                    var planId = string.IsNullOrEmpty(model.SubscriptionPlan)
+                        ? "business_monthly"
+                        : model.SubscriptionPlan;
+
+                    await SubscriptionsFacade.SubscribeUserAsync(user, model.SubscriptionPlan);
+                    await UserManager.UpdateAsync(user);
+
+                    await SignInManager.SignInAsync(user, isPersistent: false, rememberBrowser: false);
+                    
+
+                    TempData["flash"] = new FlashSuccessViewModel("Congratulations! Your account has been created.");
+
+                    return RedirectToAction("Index", "Notes");
                 }
                 AddErrors(result);
             }
@@ -203,18 +247,16 @@ namespace MyNote.Controllers
             if (ModelState.IsValid)
             {
                 var user = await UserManager.FindByNameAsync(model.Email);
-                if (user == null || !(await UserManager.IsEmailConfirmedAsync(user.Id)))
+                if (user == null)
                 {
                     // Don't reveal that the user does not exist or is not confirmed
                     return View("ForgotPasswordConfirmation");
                 }
 
-                // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=320771
-                // Send an email with this link
-                // string code = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
-                // var callbackUrl = Url.Action("ResetPassword", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);		
-                // await UserManager.SendEmailAsync(user.Id, "Reset Password", "Please reset your password by clicking <a href=\"" + callbackUrl + "\">here</a>");
-                // return RedirectToAction("ForgotPasswordConfirmation", "Account");
+                // Send an email to reset password
+                string code = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
+                var callbackUrl = Url.Action("ResetPassword", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
+                
             }
 
             // If we got this far, something failed, redisplay form
@@ -391,7 +433,7 @@ namespace MyNote.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult LogOff()
         {
-            AuthenticationManager.SignOut(DefaultAuthenticationTypes.ApplicationCookie);
+            AuthenticationManager.SignOut();
             return RedirectToAction("Index", "Home");
         }
 
